@@ -1,1 +1,568 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Window to the World — Cupola Explorer (Prototype)</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg1: #071129; /* deep navy */
+      --bg2: #0b2340; /* mid navy */
+      --accent: #67d1ff; /* cyan accent */
+      --muted: #9fb7c9;
+      --glass: rgba(255,255,255,0.04);
+      --card: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.02);
+      --radius: 12px;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 400px at 10% 10%, rgba(103,209,255,0.03), transparent),
+                  linear-gradient(180deg,var(--bg1),var(--bg2) 60%);
+      color: #eaf6ff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Page layout */
+    .container{
+      max-width:1100px;
+      margin:28px auto;
+      padding:28px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:18px;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .brand{
+      display:flex;
+      gap:14px;
+      align-items:center;
+    }
+    .logo{
+      width:54px;
+      height:54px;
+      border-radius:12px;
+      background: linear-gradient(135deg,#062033 0%, #08304a 100%);
+      border:1px solid rgba(255,255,255,0.04);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
+      font-weight:700;
+      color:var(--accent);
+      font-size:14px;
+    }
+    .title{
+      line-height:1;
+    }
+    .title h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:0.2px;
+    }
+    .title p{
+      margin:0;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* Toggle */
+    .controls{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .mode-toggle{
+      background:var(--glass);
+      padding:6px;
+      border-radius:999px;
+      display:flex;
+      gap:6px;
+      align-items:center;
+      box-shadow: 0 4px 14px rgba(5,9,20,0.6);
+    }
+    .mode-btn{
+      padding:8px 14px;
+      border-radius:999px;
+      font-weight:600;
+      font-size:13px;
+      color:var(--muted);
+      background:transparent;
+      border:none;
+      cursor:pointer;
+      transition: all .22s ease;
+    }
+    .mode-btn.active{
+      color:#04202a;
+      background: linear-gradient(90deg,var(--accent),#7de6ff);
+      box-shadow:0 6px 20px rgba(39,173,212,0.12);
+    }
+
+    .info{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:16px;
+      border-radius:12px;
+      display:flex;
+      gap:16px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .intro{
+      max-width:72%;
+    }
+    .intro h2{ margin:0 0 6px 0; font-size:16px; }
+    .intro p{ margin:0; color:var(--muted); font-size:13px; line-height:1.45; }
+
+    /* Main card area */
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:20px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      box-shadow: 0 10px 30px rgba(2,6,12,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Left: interactive view */
+    .view{
+      min-height:520px;
+      border-radius:10px;
+      overflow:hidden;
+      position:relative;
+      background:linear-gradient(180deg, rgba(0,12,20,0.25), rgba(0,5,10,0.6));
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+    }
+
+    /* Slideshow style for Cupola */
+    .slideshow{
+      width:100%;
+      height:100%;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .slide{
+      width:100%;
+      height:100%;
+      position:absolute;
+      top:0; left:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: opacity .6s ease, transform .6s ease;
+      background-size:cover;
+      background-position:center;
+      filter: drop-shadow(0 12px 30px rgba(1,10,20,0.6));
+    }
+    .slide.fade-out{
+      opacity:0;
+      transform: scale(1.03);
+      pointer-events:none;
+    }
+    .slide .overlay{
+      position:absolute;
+      inset:18px;
+      border-radius:10px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      padding:20px;
+      background: linear-gradient(180deg, rgba(2,8,14,0.02), rgba(2,8,14,0.6));
+      box-sizing:border-box;
+    }
+    .slide .caption{
+      max-width:60%;
+      background: rgba(2,9,16,0.4);
+      padding:12px 14px;
+      border-radius:10px;
+      color:#eaffff;
+      font-size:13px;
+      line-height:1.4;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Right: side panel */
+    .side{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .panel{
+      background: var(--card);
+      padding:12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .panel h3{
+      margin:0 0 8px 0;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .panel p{
+      margin:0;
+      font-size:13px;
+      line-height:1.4;
+      color:#dff7ff;
+    }
+
+    .cta{
+      display:flex;
+      gap:8px;
+      margin-top:8px;
+    }
+    .btn{
+      padding:10px 12px;
+      border-radius:10px;
+      background:linear-gradient(90deg,var(--accent),#7de6ff);
+      color:#02202a;
+      font-weight:700;
+      border:none;
+      cursor:pointer;
+    }
+
+    /* NBL simulation */
+    .nbl-sim{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      height:100%;
+      padding:20px;
+      box-sizing:border-box;
+    }
+    .pool{
+      width:100%;
+      max-width:680px;
+      height:340px;
+      background: linear-gradient(180deg, rgba(10,30,60,0.6), rgba(0,10,20,0.8));
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.03);
+      position:relative;
+      overflow:hidden;
+      box-shadow: inset 0 60px 120px rgba(2,16,30,0.5);
+    }
+    .water-surface{
+      position:absolute; left:0; right:0; top:0; height:40px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+      z-index:6;
+    }
+    .astronaut{
+      width:72px;
+      height:120px;
+      border-radius:10px;
+      position:absolute;
+      left:calc(50% - 36px);
+      transform-origin:center;
+      transition: transform 0.5s ease, top 0.5s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:6px;
+      z-index:3;
+    }
+    .astro-body{
+      width:60px; height:80px;
+      border-radius:8px;
+      background: linear-gradient(180deg,#dfeef6,#a9c9d9);
+      display:block;
+      border:1px solid rgba(0,0,0,0.05);
+    }
+    .astro-helmet{
+      width:48px; height:36px; border-radius:40px;
+      background: linear-gradient(180deg,#c0eaff,#79c6ff);
+      border:1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    }
+
+    .controls-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      width:100%;
+      justify-content:space-between;
+    }
+    .slider{
+      width:100%;
+    }
+    .hint{
+      color:var(--muted); font-size:13px;
+    }
+
+    footer{
+      margin-top:10px;
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* Responsive */
+    @media (max-width:980px){
+      .card{ grid-template-columns: 1fr; }
+      .intro{ max-width:100%; }
+      .side{ order:2; grid-row:2; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">W2W</div>
+        <div class="title">
+          <h1>Window to the World — Cupola Explorer</h1>
+          <p>Interactive prototype • Cupola & NBL experiences • Presentation edition</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="mode-toggle" aria-hidden>
+          <button class="mode-btn active" id="btn-cupola">Cupola&nbsp;🌅</button>
+          <button class="mode-btn" id="btn-nbl">NBL&nbsp;🌊</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="info">
+      <div class="intro">
+        <h2>Experience what astronauts feel: see Earth from the Cupola, train like an astronaut in the NBL.</h2>
+        <p>Switch between the Cupola view and the Neutral Buoyancy Lab training simulator. Replace the placeholder slides with real NASA Cupola images for your presentation. This front-end demo is optimized for presentation: clean, scientific, and ready to show judges.</p>
+      </div>
+      <div>
+        <button class="btn" id="start-btn">Start Exploring</button>
+      </div>
+    </div>
+
+    <main class="card" role="main">
+      <section class="view" id="main-view">
+        <!-- CUPOLA SLIDESHOW -->
+        <div class="slideshow" id="slideshow" aria-live="polite">
+          <!-- Slide elements: Replace background-image inline style with NASA image URLs -->
+          <div class="slide" data-caption="Auroras visible from the Cupola — valuable for studying Earth's magnetic interactions."
+               style="background-image: url('https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder');">
+            <div class="overlay">
+              <div class="caption">Placeholder caption: Replace with NASA image caption. Example: Aurora over Earth's limb observed from the Cupola.</div>
+            </div>
+          </div>
+
+          <div class="slide fade-out" data-caption="City lights at night — applications in urban studies and energy usage."
+               style="background-image: url('https://images.unsplash.com/photo-1471159670706-0b1e9f3a24a1?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder');">
+            <div class="overlay">
+              <div class="caption">Placeholder caption: City lights from orbit — useful for population and electricity studies.</div>
+            </div>
+          </div>
+
+          <div class="slide fade-out" data-caption="Hurricane & storm systems — Cupola photography helps disaster response."
+               style="background-image: url('https://images.unsplash.com/photo-1504198453319-5ce911bafcde?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder');">
+            <div class="overlay">
+              <div class="caption">Placeholder caption: Hurricane imagery — use NASA imagery here to talk about disaster response.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NBL simulation (hidden initially) -->
+        <div class="nbl-sim" id="nbl-sim" style="display:none;">
+          <div class="pool" id="pool">
+            <div class="water-surface"></div>
+            <div class="astronaut" id="astronaut" style="top:40%; transform: translateY(0);">
+              <div class="astro-helmet" aria-hidden></div>
+              <div class="astro-body" aria-hidden></div>
+            </div>
+          </div>
+
+          <div style="width:100%; display:flex; gap:12px; align-items:center;">
+            <div style="flex:1;">
+              <label class="hint">Adjust Buoyancy</label>
+              <input id="buoyancy" class="slider" type="range" min="-100" max="100" value="0" />
+              <div style="display:flex; justify-content:space-between; color:var(--muted); font-size:13px; margin-top:8px;">
+                <span>-Sink</span><span>Neutral</span><span>+Float</span>
+              </div>
+            </div>
+
+            <div style="width:220px;">
+              <div class="panel">
+                <h3>Training Task</h3>
+                <p>Goal: Adjust weights to reach neutral buoyancy. When neutrally buoyant, practice moving along handrails (simulated).</p>
+              </div>
+
+              <div class="panel" style="margin-top:8px;">
+                <h3>Earth Benefit</h3>
+                <p>Neutral buoyancy training prepares astronauts for complex maintenance tasks in orbit and drives advances in underwater robotics and rehab medicine.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <aside class="side" aria-label="Details & Controls">
+        <div class="panel">
+          <h3>Current Mode</h3>
+          <p id="mode-text">Cupola — Explore Earth imagery and learn how astronaut observations benefit life on Earth.</p>
+        </div>
+
+        <div class="panel">
+          <h3>Quick Facts</h3>
+          <p><strong>ISS speed:</strong> ~17,900 mph — resulting in 16 sunrises/sunsets daily.<br>
+             <strong>NBL size:</strong> 6.2 million gallons — full-scale ISS mockups for real training.</p>
+        </div>
+
+        <div class="panel">
+          <h3>Presentation Tips</h3>
+          <p>Demo flow: 1) Show Cupola slideshow (explain each image & Earth benefit). 2) Toggle to NBL and demonstrate buoyancy slider. 3) Explain how both experiences tie to Earth benefits.</p>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn" id="demo-next">Next: Demo Script</button>
+          <button class="btn" id="download-guide">Download Guide</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      Data sources (placeholders): NASA Astronaut Photography, NASA Image & Video Library, EPIC, EONET. Replace placeholders with real NASA URLs in production.
+    </footer>
+  </div>
+
+  <script>
+    // Simple front-end logic for the prototype
+    (function(){
+      const btnCupola = document.getElementById('btn-cupola');
+      const btnNbl = document.getElementById('btn-nbl');
+      const slideshow = document.getElementById('slideshow');
+      const slides = Array.from(slideshow.querySelectorAll('.slide'));
+      const nblSim = document.getElementById('nbl-sim');
+      const modeText = document.getElementById('mode-text');
+      const startBtn = document.getElementById('start-btn');
+      const astronaut = document.getElementById('astronaut');
+      const buoyancy = document.getElementById('buoyancy');
+
+      let activeIndex = 0;
+      let slideInterval = null;
+      let currentMode = 'cupola'; // cupola / nbl
+
+      function showSlide(i){
+        slides.forEach((s, idx) => {
+          if(idx === i){
+            s.classList.remove('fade-out');
+            s.style.opacity = 1;
+            s.style.zIndex = 2;
+          } else {
+            s.classList.add('fade-out');
+            s.style.opacity = 0;
+            s.style.zIndex = 1;
+          }
+        });
+      }
+
+      function startSlideshow(){
+        showSlide(activeIndex);
+        slideInterval = setInterval(() => {
+          activeIndex = (activeIndex + 1) % slides.length;
+          showSlide(activeIndex);
+        }, 3800);
+      }
+      function stopSlideshow(){
+        if(slideInterval){ clearInterval(slideInterval); slideInterval = null; }
+      }
+
+      // Mode toggling
+      function setMode(mode){
+        currentMode = mode;
+        if(mode === 'cupola'){
+          btnCupola.classList.add('active');
+          btnNbl.classList.remove('active');
+          slideshow.style.display = 'block';
+          nblSim.style.display = 'none';
+          modeText.innerText = 'Cupola — Explore Earth imagery and learn how astronaut observations benefit life on Earth.';
+          startSlideshow();
+        } else {
+          btnCupola.classList.remove('active');
+          btnNbl.classList.add('active');
+          slideshow.style.display = 'none';
+          nblSim.style.display = 'flex';
+          modeText.innerText = 'NBL — Simulate neutral buoyancy training and understand astronaut preparation for spacewalks.';
+          stopSlideshow();
+        }
+      }
+
+      // attach events
+      btnCupola.addEventListener('click', () => setMode('cupola'));
+      btnNbl.addEventListener('click', () => setMode('nbl'));
+
+      startBtn.addEventListener('click', () => {
+        // smooth scroll to main view (for presentation effect)
+        document.getElementById('main-view').scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // NBL buoyancy effect logic (simple)
+      function updateAstronaut(){
+        // buoyancy value from -100 (sink) to +100 (float)
+        const v = parseInt(buoyancy.value, 10);
+        // map to top position in percent (higher = more floating up)
+        // neutral ~ 0 => center ~ top: 40%
+        const topPct = 50 - (v * 0.12); // adjust sensitivity (tweakable)
+        astronaut.style.top = Math.max(6, Math.min(86, topPct)) + '%';
+
+        // tilt astronaut based on movement
+        const tilt = v * 0.06; // degrees
+        astronaut.style.transform = `translateY(0) rotate(${tilt}deg)`;
+      }
+      buoyancy.addEventListener('input', updateAstronaut);
+
+      // Demo buttons (placeholder behavior)
+      document.getElementById('demo-next').addEventListener('click', () => {
+        alert('Demo script: 1) Explain Cupola images and Earth benefits. 2) Toggle to NBL and show buoyancy slider. 3) Conclude with real-world impacts. (Use your saved speaker notes.)');
+      });
+      document.getElementById('download-guide').addEventListener('click', () => {
+        alert('Download Guide: placeholder. In full version we will generate a PDF guide with URLs and speaker notes.');
+      });
+
+      // Init
+      setMode('cupola');
+      updateAstronaut();
+
+      // Accessibility tip: allow keyboard toggle
+      window.addEventListener('keydown', (e) => {
+        if(e.key === '1') setMode('cupola');
+        if(e.key === '2') setMode('nbl');
+      });
+
+      // Developer notes:
+      // - Replace inline background-image urls in .slide elements with NASA image URLs.
+      // - For real captions, set the .caption text content to NASA image metadata and credit.
+      // - To integrate NASA APIs:
+      //    1) Use fetch() to call NASA Image and Video Library or EPIC/EONET APIs.
+      //    2) Populate slides dynamically: slidesContainer.appendChild(newSlideEl)
+      // - Example API integration point: after DOM load, fetch NASA image list and create slides.
+    })();
+  </script>
+</body>
+</html>
